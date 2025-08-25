@@ -18,7 +18,7 @@ SegmentedObjectPool is a high-performance C++ object pool template that provides
 
 ### Include
 ```cpp
-#include "SegmentedObjectPool.h"
+#include "SegmentedObjectPool.hpp"
 ```
 
 ### Define a Pooled Object / 定义一个对象
