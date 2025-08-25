@@ -51,7 +51,7 @@ std::cout << "Bullet3 at " << static_cast<void*>(b3) << "\n";
 b3->recycle();
 ```
 
-### Check Recycled / 检查是否回收
+### Check Recycled / 检查对象是否处于被对象池回收状态
 ```cpp
 if (b1->is_recycled()) {
     std::cout << "b1 has been recycled!" << std::endl;
