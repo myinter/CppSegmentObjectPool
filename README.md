@@ -14,7 +14,7 @@ SegmentedObjectPool is a high-performance C++ object pool template that provides
 - 支持动态扩容 / Supports dynamic segment growth
 - CRTP 模式的 PooledObject 支持统一创建与回收 / CRTP-based PooledObject supports unified create and recycle
 - 可检查对象是否已被回收 / Check if an object is recycled
-- 使用位图和索引区间管理空闲对象，提升局部性 / Manage free objects with bitmap and index tracking for better locality
+- 索引区间管理空闲对象，提升局部性 / Manage free objects with bitmap and index tracking for better locality
 
 ## Implementation Notes / 实现说明
 
