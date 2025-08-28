@@ -95,7 +95,8 @@ b3 recycled? 0                    # Bullet3 当前仍在使用，没有被回收
                                   # Bullet3 is still in use, not yet recycled
 
 Bullet5: (435,520) at 0x150008030 # 新分配的对象，地址继续向后排布，内存相邻
-                                  # A newly allocated object, placed next in memory (addresses are contiguous)
+                                  # A newly allocated object, placed next in memory
+                                    # (addresses are contiguous)
 ```
 
 ## Platform Support / 平台支持
