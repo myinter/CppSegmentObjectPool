@@ -41,24 +41,61 @@ struct Bullet : public PooledObject<Bullet> {
 ### Allocate / Recycle / 分配与回收
 
 ```cpp
-Bullet* b1 = Bullet::create(10, 20);
-Bullet* b2 = Bullet::create();
-b2->fire(30, 40);
+    Bullet* b1 = Bullet::create(10, 20);
+    Bullet* b2 = Bullet::create();
+    b2->fire(30, 40);
 
-std::cout << "Bullet1 at " << static_cast<void*>(b1) << "\n";
-std::cout << "Bullet2 at " << static_cast<void*>(b2) << "\n";
+    std::cout << "Bullet1: (" << b1->x << "," << b1->y << ") at " << static_cast<void*>(b1) << "\n";
+    
+    std::cout << "Size of Bullet " << sizeof(Bullet) << "\n";
 
-b1->recycle();
-b2->recycle();
+    std::cout << "Bullet2: (" << b2->x << "," << b2->y << ") at " << static_cast<void*>(b2) << "\n";
 
-Bullet* b3 = Bullet::create(50, 60);
-std::cout << "Bullet3 at " << static_cast<void*>(b3) << "\n";
+    b1->recycle();
+    b2->recycle();
 
-if (b1->is_recycled()) {
-    std::cout << "b1 has been recycled!" << std::endl;
-}
+    std::cout << "b1 recycled? " << b1->is_recycled() << "\n";
+    std::cout << "b2 recycled? " << b2->is_recycled() << "\n";
 
-b3->recycle();
+    Bullet* b3 = Bullet::create(50, 60);
+    Bullet* b4 = Bullet::create(230, 170);
+    Bullet* b5 = Bullet::create(435, 520);
+
+
+    std::cout << "Bullet3: (" << b3->x << "," << b3->y << ") at " << static_cast<void*>(b3) << "\n";
+    std::cout << "Bullet4: (" << b4->x << "," << b4->y << ") at " << static_cast<void*>(b4) << "\n";
+    std::cout << "b3 recycled? " << b3->is_recycled() << "\n";
+    std::cout << "Bullet5: (" << b5->x << "," << b5->y << ") at " << static_cast<void*>(b5) << "\n";
+    b3->recycle();
+```
+
+```bash
+Bullet1: (10,20) at 0x150008000   # 第一个对象，地址 0x150008000
+                                  # First object, allocated at 0x150008000
+
+Size of Bullet24                  # 输出对象大小信息
+                                  # Output object size info
+
+Bullet2: (30,40) at 0x150008018   # 第二个对象，地址紧邻第一个（相隔 0x18 字节）
+                                  # Second object, address is right next to the first (offset 0x18)
+
+b1 recycled? 1                    # Bullet1 已被回收复用
+                                  # Bullet1 has been recycled and reused
+
+b2 recycled? 1                    # Bullet2 已被回收复用
+                                  # Bullet2 has been recycled and reused
+
+Bullet3: (50,60) at 0x150008000   # Bullet3 复用了 Bullet1 的内存（地址相同）
+                                  # Bullet3 reused Bullet1's memory (same address)
+
+Bullet4: (230,170) at 0x150008018 # Bullet4 复用了 Bullet2 的内存（地址相同）
+                                  # Bullet4 reused Bullet2's memory (same address)
+
+b3 recycled? 0                    # Bullet3 当前仍在使用，没有被回收
+                                  # Bullet3 is still in use, not yet recycled
+
+Bullet5: (435,520) at 0x150008030 # 新分配的对象，地址继续向后排布，内存相邻
+                                  # A newly allocated object, placed next in memory (addresses are contiguous)
 ```
 
 ## Platform Support / 平台支持
