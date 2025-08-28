@@ -2,9 +2,9 @@
 
 ## Overview / 概述
 
-SegmentedObjectPool 是一个高性能 C++ 对象池模板，提供连续内存分配、快速获取和回收对象的能力。适用于即时消息、游戏数据或任何性能敏感的场景。
+SegmentedObjectPool 是一个高性能 C++ 对象池模板，提供连续内存分配、快速获取和回收对象的能力。适用于即时消息、游戏数据、交易系统或任何性能敏感的场景。
 
-SegmentedObjectPool is a high-performance C++ object pool template that provides contiguous memory allocation, fast object acquisition, and recycling. Suitable for IM, game data, or other performance-sensitive scenarios.
+SegmentedObjectPool is a high-performance C++ object pool template that provides contiguous memory allocation, fast object acquisition, and recycling. Suitable for IM, game data, Exhanging System, or other performance-sensitive scenarios.
 
 ## Features / 特性
 
