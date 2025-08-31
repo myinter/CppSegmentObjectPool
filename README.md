@@ -69,6 +69,10 @@ struct Bullet : public PooledObject<Bullet> {
     b3->recycle();
 ```
 
+成功重用对象，并将对象分配在互相靠近的内存地址上。
+
+Reuse the objects successfully. Allocated all objects close to each other in the same memory section.
+
 ```bash
 Bullet1: (10,20) at 0x150008000   # 第一个对象，地址 0x150008000
                                   # First object, allocated at 0x150008000
@@ -98,6 +102,31 @@ Bullet5: (435,520) at 0x150008030 # 新分配的对象，地址继续向后排�
                                   # A newly allocated object, placed next in memory
                                     # (addresses are contiguous)
 ```
+
+性能测试：分配对象，并对对象数组进行遍历的性能差距
+
+Performance Test: The performance difference between allocating objects and traversing an array of objects
+
+```bash
+
+2500 objects, New allocating took 112 microseconds
+2500 objects, Pool allocating took 30 microseconds
+
+5000 objects, New allocating took 326 microseconds
+5000 objects, Pool allocating took 73 microseconds
+
+10000 objects, New allocating took 283 microseconds
+10000 objects, Pool allocating took 74 microseconds
+
+100000 objects, New allocating took 2954 microseconds
+100000 objects, Pool allocating took 953 microseconds
+
+```
+
+进行大量对象分配和遍历时，性能差距可达到3-6倍。
+
+During the process of performing a large number of object allocations and iterations, 
+the performance gap can reach 3 to 6 times.
 
 ## Platform Support / 平台支持
 
