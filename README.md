@@ -21,8 +21,7 @@ SegmentedObjectPool is a high-performance C++ object pool template that provides
 对象池使用 **Segment** 管理一片连续内存区域：
 
 - 每个 Segment 内包含一个对象数组和一份位图 `used`，标记每个槽是否已使用。
-- 分配时从 `free_hint` 索引开始查找空闲位置，找到后直接在 buffer 上调用定位构造（placement new）。
-- 回收时更新 `free_hint` 保持高效分配。
+- 使用栈索引，高效获得可用对象
 ## Getting Started / 快速开始
 
 ### Define a Pooled Object / 定义一个对象
