@@ -15,6 +15,7 @@ SegmentedObjectPool is a high-performance C++ object pool template that provides
 - CRTP 模式的 PooledObject 支持统一创建与回收 / CRTP-based PooledObject supports unified create and recycle
 - 可检查对象是否已被回收 / Check if an object is recycled
 - 索引区间管理空闲对象，提升局部性 / Manage free objects with bitmap and index tracking for better locality
+- 提供线程安全的atomic系列API，用于并发环境分配和回收对象 / Provide thread-safe atomic series of APIs for allocating and deallocating objects in a concurrent environment.
 
 ## Implementation Notes / 实现说明
 
@@ -100,6 +101,55 @@ b3 recycled? 0                    # Bullet3 当前仍在使用，没有被回收
 Bullet5: (435,520) at 0x150008030 # 新分配的对象，地址继续向后排布，内存相邻
                                   # A newly allocated object, placed next in memory
                                     # (addresses are contiguous)
+```
+
+### 原子回收和分配，并发环境下线程安全 / Atomic recovery and allocation, thread safety in concurrent environment
+
+
+```bash
+    std::atomic<bool> start_flag{false};
+
+    // 线程 A：不断创建 Bullet / Thread A: Continuously creates Bullets
+    std::thread producer([&] {
+        while (!start_flag.load(std::memory_order_acquire)) {}
+
+        for (int i = 0; i < num_objects; ++i) {
+            Bullet* b = Bullet::atomic_create(i, i + 1);
+            assert(b != nullptr);
+            b->fire(45, i + 1);
+
+            // 模拟一点计算 Simulate some calculations
+            if ((i & 0x3FF) == 0) {
+                std::this_thread::yield();
+            }
+
+            // 立即回收 recycle immdiately
+            b->atomic_recycle();
+        }
+    });
+
+    // 线程 B：并发创建 + 回收 / Thread B: Concurrent creation + Recycling
+    std::thread consumer([&] {
+        while (!start_flag.load(std::memory_order_acquire)) {}
+
+        for (int i = 0; i < num_objects; ++i) {
+            Bullet* b = Bullet::atomic_create(i + 10, i + 20);
+            assert(b != nullptr);
+            b->fire(28, i + 20);
+
+            if ((i & 0x7FF) == 0) {
+                std::this_thread::yield();
+            }
+
+            b->atomic_recycle();
+        }
+    });
+
+    start_flag.store(true, std::memory_order_release);
+
+    producer.join();
+    consumer.join();
+
 ```
 
 性能测试：分配对象，并对对象数组进行遍历的性能差距
