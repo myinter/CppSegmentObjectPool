@@ -33,6 +33,8 @@
  * 5. 使用数组索引代替链表管理可用对象，提高内存局部性 / Use array indices instead of linked list to manage free objects, improving memory locality.
  * 6. 申请空间大小依据操作系统的内存页面大小,最高效利用内存,杜绝内部碎片。并且以分段方式动态申请内存进行对象池扩容。 / The size of the allocated space is determined by the memory page size of the operating system. This ensures the most efficient use of memory and eliminates internal fragmentation. And dynamically apply for memory in segments to expand the object pool.
  * 7. 适用于即时消息、高频交易系统、游戏数据等性能敏感场景 / Suitable for IM, high frequency trading,game data, and other performance-sensitive scenarios
+ * 8. 带有Atomic APIs 可以用于并发环境创建和回收对象 / With the Atomic API, objects can be created and reclaimed in a concurrent environment.
+
  */
 
 #pragma once
@@ -105,6 +107,30 @@ class SegmentedObjectPool {
         Segment(std::byte* d, std::size_t cap) : data(d), capacity(cap), next_uninit(0) /*free_flags(cap, 0), free_hint(0)*/ {}
     };
 
+    // 用于线程安全场景的自旋锁 Spin lock for thread-safe scenarios
+    // 用于确保对象回收的线程安全 Used to ensure thread safety for object recycling
+    struct SpinLock {
+        std::atomic_flag flag = ATOMIC_FLAG_INIT;
+        inline void lock() noexcept {
+            while (flag.test_and_set(std::memory_order_acquire)) {
+#if defined(__x86_64__) || defined(__i386__)
+                __builtin_ia32_pause();
+#endif
+            }
+        }
+        inline void unlock() noexcept {
+            flag.clear(std::memory_order_release);
+        }
+    };
+
+    // RAII LockGuard for facilitating the use of spin locks
+    // 简化自旋锁使用的 RAII LockGuard
+    struct LockGuard {
+        SpinLock& lock;
+        explicit LockGuard(SpinLock& l) : lock(l) { lock.lock(); }
+        ~LockGuard() { lock.unlock(); }
+    };
+
     std::stack<T*> free_stack_;   // 空闲对象栈 Free objects stack
 
 public:
@@ -174,6 +200,27 @@ public:
 
     }
 
+    // =============================================================
+    // 🔒 线程安全 API（池内部同步）
+    // Thread-safe API (internal synchronization within the pool)
+    // =============================================================
+    template <class... Args>
+    T* atomic_allocate(Args&&... args) {
+        LockGuard g(lock_);
+        return allocate(std::forward<Args>(args)...);
+    }
+
+    void atomic_deallocate(T* p) noexcept {
+        if (!p) return;
+        LockGuard g(lock_);
+        deallocate(p);
+    }
+
+    void atomic_clear() noexcept {
+        LockGuard g(lock_);
+        clear();
+    }
+
     // 清空池子 / Clear all memory
     void clear() noexcept {
         for (auto& seg : segments_) {
@@ -191,6 +238,10 @@ public:
         std::size_t c = 0; for (auto const& s : segments_) c += s.capacity; return c; }
 
 private:
+    
+    // 分配和回收操作的具体实现
+    // The specific implementation of allocation and recycling operations
+
     std::size_t compute_min_pages(std::size_t user_min_pages) const noexcept {
         const std::size_t ps = page_size_;
         const std::size_t ss = slot_size_;
@@ -229,6 +280,9 @@ private:
     double growth_factor_ = 1.0;
     std::size_t next_pages_hint_ = 0;
     std::size_t live_count_ = 0;
+
+    // Thread-safe lock
+    SpinLock lock_;
 };
 
 // ----------------------------
@@ -239,14 +293,28 @@ struct PooledObject {
     virtual ~PooledObject() = default;
     virtual void reset() {}
 
+    // 用于极致性能场景的线程不安全创建方法 / Thread-unsafe creation method for extreme performance scenarios
     static Derived* create(auto&&... args) {
         return SegmentedObjectPool<Derived>::instance().allocate(std::forward<decltype(args)>(args)...);
     }
 
+    // 线程安全版本的创建方法 Thread-safe version of the create method
+    static Derived* atomic_create(auto&&... args) {
+        return SegmentedObjectPool<Derived>::instance().atomic_allocate(std::forward<decltype(args)>(args)...);
+    }
+
+    // 用于极致性能场景的线程不安全回收方法 / Thread-unsafe recycle method for extreme performance scenarios
     inline void recycle() {
         this->reset();
         recycled_ = true;
         SegmentedObjectPool<Derived>::instance().deallocate(static_cast<Derived*>(this));
+    }
+
+    // 线程安全版本的回收方法 Thread-safe version of the recycling method
+    inline void atomic_recycle() {
+        this->reset();
+        recycled_ = true;
+        SegmentedObjectPool<Derived>::instance().atomic_deallocate(static_cast<Derived*>(this));
     }
 
     inline bool is_recycled() const noexcept { return recycled_; }
