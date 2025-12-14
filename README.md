@@ -9,6 +9,7 @@ SegmentedObjectPool is a high-performance C++ object pool template that provides
 ## Features / 特性
 
 - 统一分配对象 / Unified object allocation
+- 以操作系统内存页面大小为最小单元，避免内部碎片 / Avoid internal fragmentation by taking the operating system's memory page size as the minimum unit.
 - 避免对象频繁申请释放 / Avoid frequent allocation/deallocation
 - 对象在内存中连续地址分配 / Objects allocated in contiguous memory
 - 支持动态扩容 / Supports dynamic segment growth
