@@ -64,9 +64,6 @@ inline std::size_t os_page_size() noexcept {
 #elif defined(_SC_PAGESIZE)
     long pz = ::sysconf(_SC_PAGESIZE);
     return static_cast<std::size_t>(pz > 0 ? pz : 4096);
-#elif defined(_SC_PAGE_SIZE)
-    long pz = ::sysconf(_SC_PAGE_SIZE);
-    return static_cast<std::size_t>(pz > 0 ? pz : 4096);
 #elif defined(__APPLE__) && defined(__MACH__)
     long page_size = getpagesize();
     return page_size;
